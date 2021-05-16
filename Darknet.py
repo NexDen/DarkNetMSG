@@ -4,6 +4,7 @@ from tkinter import *
 from rgb_to_hex import *
 import time
 from plyer import notification
+
 config = {
     "apiKey": "AIzaSyDSIZTdvKgzCd4LshG4glyUui6rKnQpgm8",
     "authDomain": "pygame-oyun.firebaseapp.com",
@@ -37,19 +38,18 @@ db = firebase.database()
 
 #db.child("oyuncular").child("samet").child("yer").remove()
 
+bildirim_durum = True
 
 def encode(giriş) -> str:
     o = ""
     for i in giriş:
-        if len("%x" % ord(i)) == 2: # eğer ord(i) 255 ten küçükse 3 hane olması için 0x0FF şeklinde yaz
-            o+= "0%x" % ord(i)
-        else: # değilse direk yaz çünkü 3 haneli oluyo
-            o+= "%x" % ord(i)
+        o+= "%x" % ord(i)
     return o
+
 
 def decode(giriş) -> str:
     o = ""
-    b = [giriş[i:i+3] for i in range(0, len(giriş), 3)]
+    b = [giriş[i:i+2] for i in range(0, len(giriş), 2)]
     for i in b:
         print(i)
         o += chr(int(i,16))
@@ -83,7 +83,7 @@ def gönder(event=None):
         
         mesajlaşma.insert(END, f"{giriş_giden_mesaj.get()}     \n","right")
         
-        mesajlaşma.tag_configure("right",justify="right",background=hex(39,42,56))
+        mesajlaşma.tag_configure("right",justify="right",background=hex(24,32,40))
         
         mesajlaşma.config(state="disabled")
         
@@ -114,9 +114,9 @@ def mesaj_al(message):
         mesajlaşma.insert(END, f"  {konuşulacak_kişi}: {mesajlar[uzunluk]}\n")
         mesajlaşma.config(state="disabled")
         mesajlaşma.see("end")
-        if not pencere_mesaj.focus_displayof(): # pencere odaklı mı değil mi # böyle bi özellik mi varmış
+        if not pencere_mesaj.focus_displayof() and bildirim_durum == True: # pencere odaklı mı değil mi # böyle bi özellik mi varmış
             notification.notify(
-                title=konuşulacak_kişi,
+                title=f"{konuşulacak_kişi}:",
                 message=mesajlar[uzunluk],
                 timeout=15,
             )
@@ -201,8 +201,24 @@ def kişi_seç():
 
 def entry_aç(event):
     global giriş_giden_mesaj
-    giriş_giden_mesaj["bg"] = hex(90,90,90)
+    giriş_giden_mesaj["bg"] = hex(27,36,45)
     print("sa")
+
+
+
+def bildirim_değiştir():
+    global buton_bildirimler
+    global bildirim_durum
+    
+    if bildirim_durum == True:
+        buton_bildirimler["text"] = "Bildirimler: Pasif"
+        bildirim_durum = False
+        print("Bildirmler: Pasif")
+
+    else:
+        buton_bildirimler["text"] = "Bildirimler: Aktif"
+        bildirim_durum = True
+        print("Bildirmler: Aktif")
 
 
 
@@ -213,6 +229,7 @@ def mesajlaşma_giriş():
     global aktif_liste
     global pencere_mesaj
     global yazı_konuşulan_kişi
+    global buton_bildirimler
 
 
     #my_stream = db.child("gelen_mesaj").child(f"{kişi}").stream(stream_handler)
@@ -238,18 +255,29 @@ def mesajlaşma_giriş():
     mesajlaşma.pack(padx=10, pady=10, fill="both", expand=True)
     mesajlaşma.config(state="disabled")
 
+    buton_bildirimler = Button(pencere_mesaj,
+    font=("Cascadia Mono",10,"bold"),width=18,height=1,relief="flat",bg=hex(24,32,40)
+    ,fg=hex(230,230,230),cursor="hand2",command=bildirim_değiştir)
+    buton_bildirimler.place(x=680,y=15)
+
+    if bildirim_durum == True:
+        buton_bildirimler["text"] = "Bildirimler: Aktif"
+
+    else:
+        buton_bildirimler["text"] = "Bildirimler: Pasif"
+
 
     giriş_giden_mesaj = Entry(pencere_mesaj,width=68
-    ,font=("Cascadia Mono",13,"normal"),bg=hex(50,50,50),fg="white",relief="flat",borderwidth=7)
+    ,font=("Cascadia Mono",13,"normal"),bg=hex(18,24,30),fg="white",relief="flat",borderwidth=7)
     giriş_giden_mesaj.place(x=20,y=445)
 
     buton_gönder = Button(pencere_mesaj,text="Gönder ->"
-    ,font=("Segoe UI",9,"bold"),width=15,height=2,relief="flat",bg=hex(80,80,105)
+    ,font=("Segoe UI",9,"bold"),width=15,height=2,relief="flat",bg=hex(27,36,45)
     ,fg=hex(230,230,230),cursor="hand2",command=gönder)
     buton_gönder.place(x=732,y=443)
 
     buton_konuş = Button(pencere_mesaj,text="Konuş",font=("Segoe UI",9,"bold")
-    ,width=24,height=2,relief="flat",bg=hex(80,80,105),fg=hex(230,230,230),cursor="hand2",command=kişi_seç)
+    ,width=24,height=2,relief="flat",bg=hex(27,36,45),fg=hex(230,230,230),cursor="hand2",command=kişi_seç)
     buton_konuş.place(x=10,y=395)
 
     
@@ -323,14 +351,18 @@ def pencere_kayıt_ol():
     pencere_kayıt = Tk()
     pencere_kayıt.geometry("500x300")
     pencere_kayıt.title("Darknet | Kayıt Ol")
+    pencere_kayıt.configure(bg=hex(9,12,16))
 
-    yazı_kayıt_ol = Label(pencere_kayıt,text="KAYIT OL",font=("Segoe UI",14,"bold"))
+    yazı_kayıt_ol = Label(pencere_kayıt,text="KAYIT OL",font=("Segoe UI",14,"bold")
+    ,bg=hex(9,12,16),fg="white",borderwidth=5)
     yazı_kayıt_ol.place(x=40,y=30)
 
-    isim_kayıt = Entry(pencere_kayıt,width=25,font=("Segoe UI",12,"normal"))
+    isim_kayıt = Entry(pencere_kayıt,width=25,font=("Segoe UI",12,"normal")
+    ,relief="flat",bg=hex(29,32,36),fg="white")
     isim_kayıt.place(x=40,y=80)
 
-    buton_tamam = Button(pencere_kayıt,text="TAMAM",font=("Segoe UI",12,"bold"),width=15,height=2,command=kayıt_ol)
+    buton_tamam = Button(pencere_kayıt,text="TAMAM",font=("Segoe UI",12,"bold")
+    ,width=15,height=2,bg=hex(29,32,36),fg="white",relief="flat",command=kayıt_ol)
     buton_tamam.place(x=40,y=130)
 
 
@@ -341,18 +373,23 @@ def pencere_giriş_yap():
     pencere_giriş = Tk()
     pencere_giriş.geometry("500x300")
     pencere_giriş.title("Darknet | Giriş Yap")
+    pencere_giriş.configure(bg=hex(9,12,16))
 
-    yazı_kayıt_ol = Label(pencere_giriş,text="GİRİŞ YAP",font=("Segoe UI",14,"bold"))
+    yazı_kayıt_ol = Label(pencere_giriş,text="GİRİŞ YAP",font=("Segoe UI",14,"bold")
+    ,bg=hex(9,12,16),fg="white")
     yazı_kayıt_ol.place(x=40,y=30)
 
-    isim_giriş = Entry(pencere_giriş,width=25,font=("Segoe UI",12,"normal"))
+    isim_giriş = Entry(pencere_giriş,width=25,font=("Segoe UI",12,"normal")
+    ,relief="flat",bg=hex(29,32,36),fg="white",borderwidth=5)
     isim_giriş.place(x=40,y=80)
 
-    buton_tamam = Button(pencere_giriş,text="TAMAM",font=("Segoe UI",12,"bold"),width=15,height=2,command=giriş_yap)
+    buton_tamam = Button(pencere_giriş,text="TAMAM",font=("Segoe UI",12,"bold")
+    ,width=15,height=2,bg=hex(29,32,36),fg="white",relief="flat",command=giriş_yap)
     buton_tamam.place(x=40,y=130)
 
     buton_kayıt_ol_soru = Button(pencere_giriş,text="Hesabınız yok mu? Buraya tıklayarak kayıt olun"
-    ,font=("Segoe UI",10,"normal"),width=50,height=2,command=pencere_kayıt_ol)
+    ,font=("Segoe UI",10,"normal"),width=50,height=2
+    ,bg=hex(29,32,36),fg="white",relief="flat",command=pencere_kayıt_ol)
     buton_kayıt_ol_soru.place(x=40,y=200)
 
     mainloop()
